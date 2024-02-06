@@ -1,0 +1,889 @@
+var view_columnProperties = { readOnly: true };
+var lockcell = 'checkbox'
+var view_lock_type = {type: lockcell, readOnly: true }
+var lock_type = {type: lockcell, readOnly: true, beforeChange: 'lock_check'}
+
+var accept_list = ['Accept','Reject']
+var product_type_list = ['Light','Heavy']
+var raw1_type_list = ['Light','Heavy']
+var ing1_type_list = ['Light','Heavy']
+var ing1_ids = [], ing1_type = [];
+var raw1_ids = [], raw1_type = [];
+var raw2_ids = [], raw2_type = [];
+	
+var ing3_type_list = ['Mixing','Plug End']
+var mat_type_list = ['Material_1', 'Material_2',  'Material_3','Material_4', 'Material_5']
+
+var stage17_result = ['Accept','Reject']
+
+var stage6_test1_list = ['OK','Not OK']
+var stage6_manipulation_list = ['Yes','No']
+
+var all_sheets = [];
+var numRawTables = 6
+
+var primary_key_bind_col_name = "Sr. No.";
+var accept_reject_col_name = "Accept / Reject";
+var lock_col_name = 'Lock';
+var sendto_col_name = 'Send To';
+var sentdate_col_name = 'Sent Date';
+var accept_reject_col_index, lock_col_index, sendto_index, senddate_index;
+
+var duplicate_meta = [];
+
+function get_col_index(items, item_array){ //getting column indexes by Name
+	let col_indexes = []
+	for(let i = 0; i < item_array.length; i++){		
+		col_indexes.push(items.indexOf(item_array[i]));
+	}
+	return col_indexes;
+}
+
+function getMaxValueCol(col){ //get the maximum value of sr.no col
+	//console.log('data came for find max:' + col)
+	let max = 0;
+	for(let i = 0; i < col.length; i++){
+		if (col[i] == null || col[i] == "" || col[i] == 'undefined'){
+			;
+		}else{
+			if (col[i] > max)
+				max = col[i];
+		}
+	}
+	return max;
+}
+
+function view_getColumnFormat(){   // read only column format with color coding for primary key         
+	let columns = new Array(sheet.header.length - 1).fill(view_columnProperties)
+    	columns.push(view_lock_type);
+
+	let p = get_col_index(sheet.header, [primary_key_bind_col_name])[0] + 1;	
+	columns[p] = {renderer: 'color_renderer', readOnly: true}
+	
+    return columns;
+}
+
+function get_column_data_dropdown(sheetData, col_index){ //get drop down lists
+    let column_data = [];
+    for (let i = 0; i < sheetData.length; i++) {
+	    let columnData = sheetData[i][col_index];
+	    let lockStatus = sheetData[i][sheetData[i].length - 1];
+	    if (columnData !=null  || columnData != "") {
+		    if (lockStatus == 'true') {
+			column_data.push(columnData);
+		    }
+		}
+    }
+	return column_data;    
+}
+
+function filter_arrays(arr, cond){
+    let d = [];
+    for(let i = 0; i < arr.length; i++){
+        if (arr[i] == cond)
+            d.push(i);
+    }	
+    return d;
+}
+
+function filter_a_basedOn_b_cond(a, b, cond){
+	let c = [];
+	filter_arrays(b, cond).forEach( (index) => { c.push(a[index]);});	
+	return c;
+}
+
+function get_sheet_names(){ // getting all sheet names
+	let sheet_names = Object.keys(sheets)
+	return sheet_names;
+}
+
+function color_renderer(instance, td, row, col, prop, value, cellProperties) {
+	Handsontable.renderers.TextRenderer.apply(this, arguments);	
+	if (!hot || hot.isDestroyed ){
+		return;
+	}
+	if (!sheet){
+		return;
+	}
+		
+	try{
+    	
+    	let row_data = hot.getDataAtRow(row);	
+    	
+    	if ( sheet.sheet_name == all_sheets[12]){    		
+		if (row_data[col + 2] == null || row_data[col + 2] == ""){
+			hot.getCellMeta(row, col + 2).source = filter_a_basedOn_b_cond( ing1_ids, ing1_type, row_data[col + 1]);
+		}
+	}	
+
+    	for(let i = 2; i < 6; i++){
+    		let _col = col - i;
+    		if (_col > -1){
+		    	hot.setCellMeta(row, _col, 'className', 'gray_bg');
+		}
+	}
+    	
+    	//for both old and new data -- sheet == hot ? Does it keep link with source ? yes. sheet is updated along with hot automatically. Surprisingly Good News!!
+    	if(row_data[lock_col_index] == 'false' || row_data[lock_col_index] == false){
+    		hot.getCellMeta(row, col).comment = {value : 'Unlocked Good Entry'};
+    		td.className = 'green'
+    		    		
+    	}else if(row_data[lock_col_index] == 'true' || row_data[lock_col_index] == true){        	        	
+    		hot.getCellMeta(row, lock_col_index).readOnly = true;
+    		hot.getCellMeta(row, sendto_index).readOnly = true;	
+    		hot.getCellMeta(row, senddate_index).readOnly = true;    		
+    		hot.getCellMeta(row, col).readOnly = true;
+    		
+    		if (sheet.sheet_name == all_sheets[1] || sheet.sheet_name == all_sheets[3]){ //No type column. so no readonly
+    			;//
+		}else{
+    			hot.getCellMeta(row, col + 1).readOnly = true;
+    		}
+    		    		    		
+    		if (sheet.sheet_name == all_sheets[13]){ //Infiltration
+    			hot.getCellMeta(row, col + 2).readOnly = true;
+    		}
+    		if(sheet.sheet_name == all_sheets[2] ){ // if sheet is ing1 - then also make Column 5 and 6 readonly
+	    		hot.getCellMeta(row, col + 4).readOnly = true;
+	    		hot.getCellMeta(row, col + 5).readOnly = true;
+    		}      		 							
+    		
+    		if (accept_reject_col_index != -1){
+    			hot.getCellMeta(row, accept_reject_col_index).readOnly = true;	
+    			let ar = row_data[accept_reject_col_index];
+    			if ( ar == '' || ar == 'undefined' || ar == null ){    				
+    				hot.setDataAtCell(row, accept_reject_col_index, accept_list[0]);
+    			}
+    		}
+
+    		if(accept_reject_col_index > 0 && row_data[accept_reject_col_index] == 'Reject'){
+    			hot.getCellMeta(row, col).comment = {value : 'Locked Good Entry: Rejected'};
+    			hot.getCellMeta(row, lock_col_index).comment = {value : 'Locked entry cannot be edited'};
+    			td.className = 'red';
+    		}else if( accept_reject_col_index > 0 && row_data[accept_reject_col_index] == 'Accept'){
+    			hot.getCellMeta(row, col).comment = {value : 'Locked Good Entry: Accepted'};
+    			hot.getCellMeta(row, lock_col_index).comment = {value : 'Locked entry cannot be edited'};
+    			td.className = 'white';
+    		}else if( accept_reject_col_index < 0 ) {
+    			hot.getCellMeta(row, col).comment = {value : 'Locked Good Entry'};
+    			hot.getCellMeta(row, lock_col_index).comment = {value : 'Locked entry cannot be edited'};
+    			td.className = 'white';    			
+    		}else{
+    			hot.getCellMeta(row, col).comment = {value : ''};
+    			td.className = 'white';			
+    		}
+    		
+    	}else if(row_data[lock_col_index] == null && row != hot.countSourceRows() -  1 ){
+    		td.className = 'green'
+    	}else{
+    		td.className = 'white'    	
+    	}
+	
+	
+	//these lines are Duplicates
+	let prow = hot.toPhysicalRow(row);
+	
+	if( value == "" || value == 'undefined' || value == null ){
+		if (prow < duplicate_meta.length)
+			duplicate_meta[prow] = false;
+		else
+			duplicate_meta.push(false);//*/
+	}else{
+		let col_data = hot.getSourceDataAtCol(col);				
+		let lc_col_data = col_data.map( item => {return item ? item.toLowerCase() : item });
+		let val_first_index = lc_col_data.indexOf(value.toLowerCase())
+		if (val_first_index != prow){ //found duplicate
+				td.className = 'yellow';
+				if (prow < duplicate_meta.length)					
+					duplicate_meta[prow] = true;
+				else
+					duplicate_meta.push(true);//*/					
+				
+				hot.getCellMeta(row, col).comment = {value : 'Duplicate Entry'};
+				hot.getCellMeta(row, lock_col_index).readOnly =  true;
+		}
+		else{//Not duplicate
+			//console.log('No Duplicate', row, col, duplicate_meta.length);			
+			if (prow < duplicate_meta.length)
+				duplicate_meta[prow] = false;
+			else
+				duplicate_meta.push(false);//*/
+			
+			//make lock readonly = false --> but only if send data is valid and unlocked
+			let _sendto = row_data[sendto_index];
+			let _sentdate = row_data[senddate_index];
+			let _lock = row_data[lock_col_index];
+						
+			if ( _lock == 'true' || _lock == true) { //if locked,then do not touch				
+				hot.getCellMeta(row, lock_col_index).readOnly =  true;
+			}else{			
+				if ( (_sendto == '' || _sendto == 'undefined' || _sendto == null) || 
+					(_sentdate == '' || _sentdate == 'undefined' || _sentdate == null)){ //send data is not fine 						
+						hot.getCellMeta(row, lock_col_index).readOnly =  true;
+				}else{ //if sentto data is fine					
+					if (sheet_unlocked == true){
+						if (sheet.sheet_name == all_sheets[13]){
+							let stage_no = row_data[7];
+							if(stage_no == null || stage_no == ""){
+								hot.getCellMeta(row, lock_col_index).readOnly =  true;
+							}else{
+								hot.getCellMeta(row, lock_col_index).readOnly =  false;
+							}							
+						}else{
+							hot.getCellMeta(row, lock_col_index).readOnly =  false;
+						}
+					}
+				}												
+			}
+		}
+	}
+	}catch(err){
+		console.log('Renderer: ' + err)
+	}
+}
+
+function get_current_date_as_string(){
+	let date = new Date();
+	let  currentDay = String(date.getDate()).padStart(2, '0')
+	let  currentMonth = String(date.getMonth() + 1).padStart(2, '0')
+	let  currentYear = date.getFullYear();
+	return currentDate = currentDay + '/' + currentMonth + '/' + currentYear;
+}
+
+function getDefaultRow(){
+	let defaultRow;
+	let currentDate = get_current_date_as_string(); // getting date from local machine. It  can be changed to server  time, if needed.
+	
+	switch(sheet.sheet_name){
+	case all_sheets[0]:
+		defaultRow = [ raw1_type_list[0], '', '', '', '','','','','','','','', all_sheets[2], currentDate,'','', false];
+		break;	
+	
+	case all_sheets[1]:	
+		defaultRow = ['', '', '', '','','',all_sheets[2], currentDate,'','',false];
+	 	break;
+	
+	case all_sheets[2]:
+		defaultRow  =[ing1_type_list[0],'','', filter_a_basedOn_b_cond( raw1_ids, raw1_type, ing1_type_list[0])[0],
+		get_column_data_dropdown(sheets[all_sheets[1]]['sheet_data'], 1)[0],
+		'','','','','','','','','','','','',all_sheets[3],currentDate,'','',false];
+		break;
+	
+	case all_sheets[3]:
+		defaultRow = ['','','','','','','',all_sheets[13], currentDate,'','',false];
+		break;
+	
+	case all_sheets[4]:
+		defaultRow = [ing3_type_list[0],'','','','','','','','',all_sheets[12], currentDate,'','',false];
+		break;
+	
+	case all_sheets[5]:
+		defaultRow = [mat_type_list[0],'','','','','','',all_sheets[6],currentDate,'','',false];
+		break;
+	
+	case all_sheets[6]:
+		let a=get_column_data_dropdown(sheets[all_sheets[5]]['sheet_data'], 1)
+		let b=get_column_data_dropdown(sheets[all_sheets[5]]['sheet_data'], 2)
+		let c = a[filter_arrays(b, mat_type_list[0])[0]];
+		let d = a[filter_arrays(b, mat_type_list[1])[0]];
+		
+		defaultRow = [product_type_list[0],c,d,'','','','','',currentDate,'',currentDate,'',all_sheets[7],currentDate,'','',false];
+		break;
+	
+	/* case all_sheets[7]:
+	       defaultRow = ['','','','',all_sheets[8],currentDate,'','',false];
+	       break;//starting after 1 blank
+	 case all_sheets[8]:
+	       defaultRow = ['','','','',all_sheets[9],currentDate,'','',false];
+	       break;//starting after 1 blank
+	       
+	 case all_sheets[9]:
+	       defaultRow = ['','','','',all_sheets[10],currentDate,'','',false];
+	       break;//starting after 1 blank
+	 case all_sheets[10]: 
+	      defaultRow = ['','','','',all_sheets[11],currentDate,'','',false];
+	       break;//starting after 1 blank
+	 case all_sheets[11]: 
+	        let a=get_column_data_dropdown(sheets['Materials']['sheet_data'], 4)
+		let b = a[filter_arrays(b, mat_type_list[3])[0]];
+	      defaultRow = [a,'','','',stage6_test1_list[0],stage6_manipulation_list[0],'',all_sheets[12],currentDate,'','',false];
+	       break;//starting after 1 blank
+	 case all_sheets[12]:
+	       defaultRow = ['','','','','','','','','','','','','',all_sheets[13],currentDate,'','',false];
+	       break;//starting after 1 blank
+	 case all_sheets[13]: 
+	  let a=get_column_data_dropdown(sheets['Ingredients']['sheet_data'], 2)
+		let b = a[filter_arrays(b, ing_type_list[1])[0]];
+	 
+	       defaultRow = [a,'','','','','',all_sheets[14],currentDate,'','',false];
+	       break;//starting after 1 blank
+	 case all_sheets[14]: 
+	       defaultRow = ['','','','','','',all_sheets[15],currentDate,'','',false];
+	       break;//starting after 2 blank
+	       
+	 case all_sheets[15]: 
+	       defaultRow = ['','','','','',all_sheets[16],currentDate,'','',false];
+	       break;//starting after 2 blank
+	       
+	 case all_sheets[16]: 
+	       defaultRow = ['','','','','','',all_sheets[17],currentDate,'','',false];
+	       break;//starting after 2 blank
+	 case all_sheets[17]: 
+	       defaultRow = ['','','','','','','',all_sheets[18],currentDate,'','','',false];
+	       break;//starting after 1 blank
+	 case all_sheets[18]: 
+	       defaultRow = ['','','','','','','','',all_sheets[19],currentDate,'','',false];
+	       break;//starting after 1 blank
+	 case all_sheets[19]: 
+	       defaultRow = ['','','','','','',all_sheets[20],currentDate,'','',false];
+	       break;//starting after 1 blank
+	  case all_sheets[20]: 
+	       defaultRow = ['','','','','','','',all_sheets[21],currentDate,'','',false];
+	       break;//starting after 1 blank
+	  case all_sheets[21]: 
+	       defaultRow = ['','','','','','','','','','','',all_sheets[22],currentDate,'','',false];
+	       break;//starting after 1 blank
+	 case all_sheets[22]: 
+	       defaultRow = ['','','','','','','','','','',all_sheets[23],currentDate,'','',false];
+	       break;//starting after 1 blank
+	  case all_sheets[23]: 
+	       defaultRow = ['','','','','',all_sheets[24],currentDate,'','',false];
+	       break;//starting after 1 blank
+	 case all_sheets[24]: 
+	       defaultRow = ['','','','','','','','',all_sheets[25],currentDate,'','',false];
+	       break;//starting after 1 blank
+	  case all_sheets[25]: 
+	       defaultRow = ['','','','','',all_sheets[26],currentDate,'','',false];
+	       break;//starting after 1 blank
+	  case all_sheets[26]: 
+	       defaultRow = ['','','','','',all_sheets[27],currentDate,'','',false];
+	       break;//starting after 1 blank
+	  case all_sheets[27]: 
+	       defaultRow = ['','','','','','','','','','','','','','','','','','','','','',all_sheets[28],currentDate,'','',false];
+	       break;//starting after 1 blank
+	  case all_sheets[28]: 
+	       defaultRow = ['','','','','','','',all_sheets[27],currentDate,'','',false];
+	       break;//starting after 1 blank     
+	       //*/ 		
+	}
+	return defaultRow;
+}
+
+
+function getColumnFormat(){
+	duplicate_meta.length = 0;	
+	
+	let sheet_name = sheet.sheet_name;
+	let columns, fixed_columns;
+	
+	let stages = all_sheets.slice()
+	let sheet_index = stages.indexOf(sheet_name);
+	if (sheet_index !== -1){
+		stages.splice(sheet_index, 1);
+	}
+	stages.push("Final Assembly");
+	let raw = stages.splice(0, numRawTables);
+					
+	switch(sheet_name){
+	case all_sheets[0]:
+	columns = [
+            {readOnly: true },{renderer: 'color_renderer', /*comment: {value: 'hello'}//*/},{type: "dropdown", source: raw1_type_list },
+            {type: 'numeric', numericFormat: { pattern: '0' }, validator: positiveNumberValidator,},            
+            {type: 'date',},{},{type: 'date',},
+            {type: 'numeric', numericFormat: { pattern: '0' }, validator: percentageValidator},
+            {type: 'numeric', numericFormat: { pattern: '0' }, validator: percentageValidator},
+            {type: 'numeric', numericFormat: { pattern: '0' }, validator: positiveIntegerValidator },
+            {type: 'numeric', numericFormat: { pattern: '0' }, validator: positiveIntegerValidator },
+            {type: 'numeric', numericFormat: { pattern: '0' }, validator: positiveIntegerValidator },
+            {type: 'numeric', numericFormat: { pattern: '0' }, validator: positiveIntegerValidator },
+            {type: 'numeric', numericFormat: { pattern: '0' }, validator: positiveIntegerValidator },
+            {type: "dropdown", source: all_sheets, readOnly: true },
+            {type: 'date',},
+            {type: 'numeric', numericFormat: { pattern: '0' }, validator: positiveNumberValidator},
+            {}
+        ];
+        fixed_columns = 2;
+	break;	
+	
+	case all_sheets[1]:
+        columns = [
+        {readOnly: true },
+        {renderer: 'color_renderer'},
+        {type: 'numeric', numericFormat: { pattern: '0' }, validator: positiveNumberValidator,},
+        {type: 'date',},
+        {},
+        {type: 'date',},
+        {type: 'numeric', numericFormat: { pattern: '0' }, validator: percentageValidator},
+        {type: 'numeric', numericFormat: { pattern: '0' }, validator: positiveIntegerValidator },
+        {type: "dropdown", source: all_sheets, readOnly: true },
+        {type: 'date',},
+        {type: 'numeric', numericFormat: { pattern: '0' }, validator: positiveNumberValidator},
+        {}
+        ];
+        fixed_columns = 2;
+ 	break;
+	
+	case all_sheets[2]:
+	raw1_ids = get_column_data_dropdown(sheets[all_sheets[0]]['sheet_data'], 1);
+	raw1_type  = get_column_data_dropdown(sheets[all_sheets[0]]['sheet_data'], 2);
+
+        columns = [
+        {readOnly: true },{renderer: 'color_renderer'},{type: 'dropdown', source: ing1_type_list},
+        {type: 'numeric', numericFormat: { pattern: '0' }, validator: positiveNumberValidator},
+        {type: 'date',},
+        //{type: 'dropdown', source: get_column_data_dropdown(sheets[all_sheets[0]]['sheet_data'], 1)},
+        {type: 'dropdown', source: filter_a_basedOn_b_cond( raw1_ids, raw1_type, ing1_type_list[0])},
+        {type: 'dropdown', source: get_column_data_dropdown(sheets[all_sheets[1]]['sheet_data'], 1)},
+        {},{type: 'date',},
+        {type: 'numeric', numericFormat: { pattern: '0' }, validator: percentageValidator},
+        {type: 'numeric', numericFormat: { pattern: '0' }, validator: percentageValidator},
+        {type: 'numeric', numericFormat: { pattern: '0' }, validator: percentageValidator},
+        {type: 'numeric', numericFormat: { pattern: '0' }, validator: positiveIntegerValidator },
+        {type: 'numeric', numericFormat: { pattern: '0' }, validator: positiveIntegerValidator },
+        {type: 'numeric', numericFormat: { pattern: '0' }, validator: positiveIntegerValidator },
+        {type: 'date',},{},{},{},
+        {type: "dropdown", source: all_sheets, readOnly: true },
+        {type: 'date',},
+        {type: 'numeric', numericFormat: { pattern: '0' }, validator: positiveNumberValidator},
+        {}
+        ];
+        fixed_columns = 2;
+ 	break;
+	
+	case all_sheets[3]:
+        columns = [
+        {readOnly: true },{renderer: 'color_renderer'},
+        {type: 'numeric', numericFormat: { pattern: '0' }, validator: positiveNumberValidator},
+        {type: 'date',},{},{type: 'date',},
+        {type: 'numeric', numericFormat: { pattern: '0' }, validator: percentageValidator},
+        {type: 'numeric', numericFormat: { pattern: '0' }, validator: percentageValidator},
+        {type: 'numeric', numericFormat: { pattern: '0' }, validator: positiveIntegerValidator},
+        {type: "dropdown", source: all_sheets, readOnly: true},
+        {type: 'date',},
+        {type: 'numeric', numericFormat: { pattern: '0' }, validator: positiveNumberValidator},
+        {}
+        ];
+        fixed_columns = 2;
+ 	break;
+ 	
+        case all_sheets[4]:
+        columns = [
+        {readOnly: true },{renderer: 'color_renderer'},{type: 'dropdown', source: ing3_type_list},{},
+        {type: 'numeric', numericFormat: { pattern: '0' }, validator: positiveNumberValidator},
+        {type: 'date',},
+        {type: 'numeric', numericFormat: { pattern: '0' }, validator: positiveIntegerValidator },
+        {type: 'numeric', numericFormat: { pattern: '0' }, validator: positiveIntegerValidator },
+        {type: 'numeric', numericFormat: { pattern: '0' }, validator: positiveIntegerValidator },
+        {type: 'numeric', numericFormat: { pattern: '0' }, validator: positiveIntegerValidator },
+        {type: 'numeric', numericFormat: { pattern: '0' }, validator: positiveIntegerValidator },
+        {type: "dropdown", source: all_sheets, readOnly: true },{type: 'date',},
+        {type: 'numeric', numericFormat: { pattern: '0' }, validator: positiveNumberValidator},
+        {}
+        ];
+        fixed_columns = 2;
+ 	break;
+ 	
+ 	case all_sheets[5]:
+        columns = [
+        {readOnly: true },{renderer: 'color_renderer'}, {type: "dropdown", source:mat_type_list},
+        {}, {type: 'numeric', numericFormat: { pattern: '0' }, validator: positiveNumberValidator},
+        {type: 'date',},{},{type: 'date',},
+        {type: 'numeric', numericFormat: { pattern: '0' }, validator: positiveNumberValidator},
+        {type: "dropdown", source: all_sheets, readOnly: true },{type: 'date',},
+        {type: 'numeric', numericFormat: { pattern: '0' }, validator: positiveNumberValidator},{}
+        ];
+        fixed_columns = 2;
+ 	break;
+	
+	case all_sheets[6]:
+	{
+    		let a=get_column_data_dropdown(sheets[all_sheets[5]]['sheet_data'], 1);
+	    	let b=get_column_data_dropdown(sheets[all_sheets[5]]['sheet_data'], 2);  
+           	
+	    columns = [
+	      {readOnly: true },
+	      {type: 'date', readOnly: true },
+	      {readOnly: true },
+	      {readOnly: true },
+	      {readOnly: true },
+	      {renderer: 'color_renderer'},
+	      {		
+		type: "dropdown",
+		source: product_type_list		
+	      },
+	      {
+		type: "dropdown",
+		source: filter_a_basedOn_b_cond(a, b, mat_type_list[0]),
+	      },
+	      {
+		type: "dropdown",
+		source: filter_a_basedOn_b_cond(a, b, mat_type_list[1]),		
+	      },
+	      {type: 'date',},{},{},{},{},{type: 'date',},{},{type: 'date',},{readOnly: true},
+	      {type: "dropdown", source: stages },
+	      {type: 'date',},
+	      {
+		type: 'dropdown', 
+		source: accept_list,
+	      },{}
+	    ];
+	fixed_columns = 6;}
+ 	break;
+
+	case all_sheets[7]:
+	    {	    
+	    columns = [
+		{readOnly: true },{type: 'date',readOnly: true },{readOnly: true },{readOnly: true },{readOnly: true },{renderer: 'color_renderer', readOnly: true },{readOnly: true },
+		{type: 'date',},
+		{},{},{readOnly: true},
+		{type: "dropdown", source: stages },{type: 'date'},
+		{type: 'dropdown', source: accept_list,},
+		{},		
+		];
+        fixed_columns = 6;}
+ 	break;
+ 	
+ 	case all_sheets[8]:
+	    {
+	    columns = [
+		{readOnly: true },{type: 'date',readOnly: true },{readOnly: true },{readOnly: true },{readOnly: true },{renderer: 'color_renderer',readOnly: true },{readOnly: true },
+		{type: 'date',},{},{},{readOnly: true},{type: "dropdown", source: stages },{type: 'date',},
+		{
+		    type: 'dropdown', 
+		    source: accept_list,},
+		{}
+		];
+        fixed_columns = 6;}
+ 	break;
+	
+	case all_sheets[9]:
+	    {
+	    
+	    columns = [
+		{readOnly: true },{type: 'date',readOnly: true },{readOnly: true },{readOnly: true },{readOnly: true },{renderer: 'color_renderer',readOnly: true },{readOnly: true },
+		{type: 'date',},{},{},{readOnly: true},{type: "dropdown", source: stages },{type: 'date',},
+		{
+		    type: 'dropdown', 
+		    source: accept_list,},
+		{}
+		];
+	fixed_columns = 6;}
+ 	break;
+	
+	case all_sheets[10]:
+	    {
+		columns = [
+		{readOnly: true },{type: 'date',readOnly: true },{readOnly: true },{readOnly: true },{readOnly: true },{renderer: 'color_renderer',readOnly: true },{readOnly: true },
+		{type: 'date',},{},{},{readOnly: true},{type: "dropdown", source: stages },{type: 'date',},
+		{
+		    type: 'dropdown', 
+		    source: accept_list,get_column_data_dropdown
+		},{}
+		];
+	fixed_columns = 6;}
+ 	break;
+
+	case all_sheets[11]:
+	{
+	let a=get_column_data_dropdown(sheets[all_sheets[5]]['sheet_data'], 1);
+	let b=get_column_data_dropdown(sheets[all_sheets[5]]['sheet_data'], 2);  
+
+	columns = [
+	{readOnly: true },{type: 'date',readOnly: true },{readOnly: true },{readOnly: true },{readOnly: true },{renderer: 'color_renderer',readOnly: true },{readOnly: true },
+	{
+	    type: 'dropdown', 
+	    source: filter_a_basedOn_b_cond(a, b, mat_type_list[3]),
+	},
+	{type: 'date',},{},{},{type: "dropdown", source:stage6_test1_list},{type: "dropdown", source:stage6_manipulation_list},{readOnly: true},{type: "dropdown", source: stages },{type: 'date',},
+	{
+	    type: 'dropdown', 
+	    source: accept_list,},
+	{}
+	];
+
+	fixed_columns = 6;}
+ 	break;
+
+	case all_sheets[12]:
+	{
+	//let material_list1 = get_column_data_dropdown(sheets[all_sheets[2]]['sheet_data'], 1);
+	
+	ing1_ids = get_column_data_dropdown(sheets[all_sheets[2]]['sheet_data'], 1);
+	ing1_type  = get_column_data_dropdown(sheets[all_sheets[2]]['sheet_data'], 2);
+		
+	let a = get_column_data_dropdown(sheets[all_sheets[5]]['sheet_data'], 1);
+	let b = get_column_data_dropdown(sheets[all_sheets[5]]['sheet_data'], 2);	
+
+	let c = get_column_data_dropdown(sheets[all_sheets[4]]['sheet_data'], 1);
+	let d = get_column_data_dropdown(sheets[all_sheets[4]]['sheet_data'], 2);
+	
+	columns = [
+	{readOnly: true },{type: 'date',readOnly: true },{readOnly: true },{readOnly: true },{readOnly: true },{renderer: 'color_renderer',readOnly: true },{readOnly: true },
+	//{type: 'dropdown', source: material_list1},
+	{type: 'dropdown'},
+	{type: 'dropdown', source: filter_a_basedOn_b_cond(c, d, ing3_type_list[0])},
+	{type: 'dropdown', source: filter_a_basedOn_b_cond(c, d, ing3_type_list[1])},
+	{type: 'dropdown', source: filter_a_basedOn_b_cond(a, b, mat_type_list[4])},
+	{type: 'date',},{},{},
+	{type: 'numeric', numericFormat: { pattern: '0' }, validator: positiveNumberValidator},
+	{type: 'numeric', numericFormat: { pattern: '0' }, validator: positiveNumberValidator},
+	{type: 'numeric', numericFormat: { pattern: '0' }, validator: positiveNumberValidator},
+	{type: 'numeric', numericFormat: { pattern: '0' }, validator: positiveNumberValidator},
+	{type: 'numeric', numericFormat: { pattern: '0' }, validator: positiveNumberValidator},{readOnly: true},{type: "dropdown", source: stages },{type: 'date',},
+	{
+	    type: 'dropdown', 
+	    source: accept_list,},
+	{}
+	];
+        fixed_columns = 6;}
+ 	break;
+
+	case all_sheets[13]:
+	{
+	let material_list = get_column_data_dropdown(sheets[all_sheets[3]]['sheet_data'], 1);
+	columns = [
+	{readOnly: true },{type: 'date',readOnly: true },{readOnly: true },{readOnly: true },{readOnly: true },{renderer: 'color_renderer',readOnly: true },{readOnly: true },
+	{},{type: 'dropdown', 
+	    source: material_list,},
+	{type: 'date',},{},{},{readOnly: true},{type: "dropdown", source: stages },{type: 'date',},
+	{
+	    type: 'dropdown', 
+	    source: accept_list,},{}
+	];
+	fixed_columns = 6;}
+ 	break;
+
+	case all_sheets[14]:
+	{
+	columns = [
+	{readOnly: true },{type: 'date',readOnly: true },{readOnly: true },{readOnly: true },{readOnly: true },{renderer: 'color_renderer',readOnly: true },{readOnly: true },
+	{readOnly: true },
+	{readOnly: true },{type: 'date',},{},{},{readOnly: true},{type: "dropdown", source: stages },{type: 'date',},
+	{
+	    type: 'dropdown', 
+	    source: accept_list,},{}
+	];
+	fixed_columns = 6;}
+ 	break;
+
+	case all_sheets[15]:
+	{
+	columns = [
+	{readOnly: true },{type: 'date',readOnly: true },{readOnly: true },{readOnly: true },{readOnly: true },{renderer: 'color_renderer',readOnly: true },{readOnly: true },
+	{readOnly: true },
+	{type: 'date',},{},{},{readOnly: true},
+	{type: "dropdown", source: stages },{type: 'date',},
+	{type: 'dropdown', source: accept_list,},
+	{}
+	];
+	fixed_columns = 6;}
+ 	break;
+
+	case all_sheets[16]:
+	{
+	columns = [
+	{readOnly: true },{type: 'date',readOnly: true },{readOnly: true },{readOnly: true },{readOnly: true },{renderer: 'color_renderer',readOnly: true },{readOnly: true },
+	{readOnly: true },{type: 'date',},{},{},
+	{type: 'numeric', numericFormat: { pattern: '0' }, validator: positiveNumberValidator},
+	{readOnly: true},{type: "dropdown", source: stages },{type: 'date',},
+	{   
+	    type: 'dropdown', 
+	    source: accept_list,},
+	{}
+	];
+	fixed_columns = 6;}
+ 	break;
+
+	case all_sheets[17]:
+	{
+	columns = [
+	{readOnly: true },{type: 'date',readOnly: true },{readOnly: true },{readOnly: true },{readOnly: true },{renderer: 'color_renderer',readOnly: true },{readOnly: true },
+	{readOnly: true },{type: 'date',},{},{},
+	{type: 'numeric', numericFormat: { pattern: '0' }, validator: positiveNumberValidator},
+	{type: 'numeric', numericFormat: { pattern: '0' }, validator: positiveNumberValidator},
+	{readOnly: true},{type: "dropdown", source: stages },{type: 'date',},
+	{ 
+	    type: 'dropdown', 
+	    source: accept_list,},
+	{readOnly: true},{}
+	];
+	fixed_columns = 6;}
+ 	break;
+	 	
+	case all_sheets[18]:
+	{
+	columns = [
+	{readOnly: true },{type: 'date',readOnly: true },{readOnly: true },{readOnly: true },{readOnly: true },{renderer: 'color_renderer',readOnly: true },{readOnly: true },
+	{readOnly: true },{type: 'date',},{},
+	{type: 'numeric', numericFormat: { pattern: '0' }, validator: positiveNumberValidator},
+	{type: 'numeric', numericFormat: { pattern: '0' }, validator: positiveNumberValidator},
+	{type: 'date',},{},{readOnly: true},
+	{type: "dropdown", source: [all_sheets[18], all_sheets[all_sheets.length - 1], stages[stages.length - 1]] },
+	{type: 'date',},
+	{   
+	    type: 'dropdown', 
+	    source: accept_list,},{}
+	];
+	fixed_columns = 6;}
+ 	break;
+
+	case all_sheets[19]:
+	{
+	columns = [
+	{readOnly: true },{type: 'date',readOnly: true },{readOnly: true },{readOnly: true },{readOnly: true },{renderer: 'color_renderer',readOnly: true },{readOnly: true },
+	{readOnly: true },{type: 'date',},{},{},
+	{type: 'numeric', numericFormat: { pattern: '0' }, validator: percentageValidator},{readOnly: true},{type: "dropdown", source: stages },{type: 'date',},
+	{   
+	    type: 'dropdown', 
+	    source: accept_list,},{}
+	];
+	fixed_columns = 6;}
+ 	break;
+
+	case all_sheets[20]:
+	{
+	columns = [
+	{readOnly: true },{type: 'date',readOnly: true },{readOnly: true },{readOnly: true },{readOnly: true },{renderer: 'color_renderer',readOnly: true },{readOnly: true },
+	{readOnly: true },{type: 'date',},{},{},
+	{type: 'numeric', numericFormat: { pattern: '0' }, validator: positiveNumberValidator},
+	{type: 'numeric', numericFormat: { pattern: '0' }, validator: positiveNumberValidator},
+	{readOnly: true},
+	{type: "dropdown", source: stages },{type: 'date',},
+	{type: 'dropdown', source: accept_list,},
+	{}
+	];
+	fixed_columns = 6;}
+ 	break;
+
+	case all_sheets[21]:
+	{
+	
+	let a = get_column_data_dropdown(sheets[all_sheets[5]]['sheet_data'], 1);
+	let b = get_column_data_dropdown(sheets[all_sheets[5]]['sheet_data'], 2);		
+
+	columns = [
+	{readOnly: true },{type: 'date',readOnly: true },{readOnly: true },{readOnly: true },{readOnly: true },{renderer: 'color_renderer',readOnly: true },{readOnly: true },
+	{readOnly: true },
+	{type: 'dropdown', source: filter_a_basedOn_b_cond(a, b, mat_type_list[2]),},
+	{type: 'date',},{},{},{},{},{type: 'date',},{},{type: 'date',},{readOnly: true},{type: "dropdown", source: stages },{type: 'date',},
+	{
+	    type: 'dropdown', 
+	    source: accept_list,},{}
+	];
+	fixed_columns = 6;}
+ 	break;
+ 	
+	case all_sheets[22]:
+	{
+	columns = [
+	{readOnly: true },{type: 'date',readOnly: true },{readOnly: true },{readOnly: true },{readOnly: true },{renderer: 'color_renderer',readOnly: true },{readOnly: true },{readOnly: true },
+	{type: 'date',},{},{},{type: "dropdown", source: stage17_result },{type: 'date',},{},{},{type: "dropdown", source: stage17_result},{readOnly: true},{type: "dropdown", source: stages },{type: 'date',},
+	{
+	    type: 'dropdown', 
+	    source: accept_list,},{}
+	];
+	fixed_columns = 6;}
+ 	break;
+	 	
+	case all_sheets[23]:
+	{
+	columns = [
+	{readOnly: true },{type: 'date',readOnly: true },{readOnly: true },{readOnly: true },{readOnly: true },{renderer: 'color_renderer',readOnly: true }, {readOnly: true },{readOnly: true },
+	{type: 'date',},{},{},{readOnly: true},{type: "dropdown", source: stages },{type: 'date',},
+	{
+	    type: 'dropdown', 
+	    source: accept_list,},{}
+	];
+	fixed_columns = 6;}
+ 	break;
+ 	
+ 	
+	case all_sheets[24]:
+	{
+	columns = [
+	{readOnly: true },{type: 'date',readOnly: true },{readOnly: true },{readOnly: true },{readOnly: true },{renderer: 'color_renderer',readOnly: true },{readOnly: true },{readOnly: true },
+	{type: 'date',},{},{},
+	{type: 'numeric', numericFormat: { pattern: '0' }, validator: positiveNumberValidator},
+	{type: 'numeric', numericFormat: { pattern: '0' }, validator: positiveNumberValidator},
+	{type: 'numeric', numericFormat: { pattern: '0' }, validator: positiveNumberValidator},
+	{readOnly: true},{type: "dropdown", source: stages },{type: 'date',},
+	{type: 'dropdown', source: accept_list,},{}
+	];
+	fixed_columns = 6;}
+ 	break;
+	 	
+	 	
+	case all_sheets[25]:
+	{
+	
+	columns = [
+	{readOnly: true },{type: 'date',readOnly: true },{readOnly: true },{readOnly: true },{readOnly: true },{renderer: 'color_renderer',readOnly: true },{readOnly: true },{readOnly: true },
+	{type: 'date',},{},{},{readOnly: true},{type: "dropdown", source: stages },{type: 'date',},
+	{
+	    type: 'dropdown', 
+	    source: accept_list,},{}
+	];
+	fixed_columns = 6;}
+ 	break;
+ 	
+	case all_sheets[26]:
+	{
+	columns = [
+	{readOnly: true },{type: 'date',readOnly: true },{readOnly: true },{readOnly: true },{readOnly: true },{renderer: 'color_renderer',readOnly: true }, {readOnly: true }, {readOnly: true },
+	{type: 'date',},{},{},{readOnly: true},{type: "dropdown", source: stages },{type: 'date',},
+	{
+	    type: 'dropdown', 
+	    source: accept_list,},{}
+	];
+	fixed_columns = 6;}
+ 	break;
+ 	
+	case all_sheets[27]:
+	{
+	
+	columns = [
+	{readOnly: true },{type: 'date',readOnly: true },{readOnly: true },{readOnly: true },{readOnly: true },{renderer: 'color_renderer',readOnly: true },{readOnly: true },{readOnly: true },
+	{type: 'date',},{},{},
+	{type: 'date',},{},
+	{type: 'numeric', numericFormat: { pattern: '0' }, validator: positiveNumberValidator},
+	{type: 'numeric', numericFormat: { pattern: '0' }, validator: positiveNumberValidator},
+	{type: 'numeric', numericFormat: { pattern: '0' }, validator: positiveNumberValidator},
+	{type: 'numeric', numericFormat: { pattern: '0' }, validator: positiveNumberValidator},
+	{type: 'numeric', numericFormat: { pattern: '0' }, validator: positiveNumberValidator},
+	{type: 'numeric', numericFormat: { pattern: '0' }, validator: positiveNumberValidator},
+	{type: 'numeric', numericFormat: { pattern: '0' }, validator: positiveNumberValidator},
+	{type: 'numeric', numericFormat: { pattern: '0' }, validator: positiveNumberValidator},
+	{type: 'numeric', numericFormat: { pattern: '0' }, validator: positiveNumberValidator},
+	{type: 'numeric', numericFormat: { pattern: '0' }, validator: positiveNumberValidator},
+	{type: 'numeric', numericFormat: { pattern: '0' }, validator: positiveNumberValidator},
+	{type: 'numeric', numericFormat: { pattern: '0' }, validator: positiveNumberValidator},
+	{type: 'numeric', numericFormat: { pattern: '0' }, validator: positiveNumberValidator},
+	{type: 'numeric', numericFormat: { pattern: '0' }, validator: positiveNumberValidator},
+	{readOnly: true},{type: "dropdown", source: stages },{type: 'date',},
+	{
+	    type: 'dropdown', 
+	    source: accept_list,},{}
+	];
+	fixed_columns = 6;}
+ 	break;
+	     
+	case all_sheets[28]:
+	{
+	
+	columns = [
+	{readOnly: true },{type: 'date',readOnly: true },{readOnly: true },{readOnly: true },{readOnly: true },{renderer: 'color_renderer',readOnly: true },{readOnly: true },{readOnly: true },
+	{type: 'date',},{},
+	{type: 'numeric', numericFormat: { pattern: '0' }, validator: positiveNumberValidator},
+	{},{type: 'date',},{readOnly: true},
+	{type: "dropdown", source: stages },{type: 'date',},
+	{
+	    type: 'dropdown', 
+	    source: accept_list,},{}
+	];
+	fixed_columns = 6;}
+ 	break;
+     	}
+     	columns.push(lock_type);     	
+	return [columns, fixed_columns];
+}
+     

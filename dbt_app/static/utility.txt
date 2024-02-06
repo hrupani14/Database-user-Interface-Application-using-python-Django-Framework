@@ -1,0 +1,243 @@
+const positiveIntegerValidator = function positiveIntegerValidator(value, callback){
+   // Check if the value is a positive integer   	
+	if (value === null || value === ''){//blank
+		callback(true);
+	}else{
+		let isInt = Number.isInteger(value);
+		if (isInt == false){ //text or float
+			callback(false);
+		}else{//number
+			if (value > 0){//positive integer number
+				callback(true);
+			}else{
+				callback(false);
+			}
+		}
+	}
+}
+
+
+const positiveNumberValidator =  function positiveNumberValidator(value, callback){
+   // Check if the value is a positive number
+   	console.log('in validator')
+	if (value === null || value === ''){//blank
+		callback(true);
+	}else{
+		let val = Number(value);
+		if (isNaN(val) == true){ //either text or blank
+				callback(false);
+		}else{
+			if (val > 0){
+				callback(true);
+			}else{
+				callback(false);
+			}
+		}
+	}
+}
+
+const percentageValidator = function percentageValidator(value, callback){
+   // Check if the value is a positive number less than 100
+   	
+	if (value === null || value === ''){//blank
+		callback(true);
+	}else{
+		let val = Number(value);
+		if (isNaN(val) == true){ //either text or blank
+				callback(false);
+		}else{
+			if (val > 0 && val < 100){
+				callback(true);
+			}else{
+				callback(false);
+			}
+		}
+	}
+}
+       
+
+
+
+const lock_check = function(e){ // check lock cells - using Keydown and MouseClick event
+    //console.log(e.type, e.keyCode)
+    // Mouseup is checked and if it is keydown, then check if the key pressed in space bar (code:32)
+    // then go and do the message passing to user.
+    if (e.type == 'mouseup' || (e.type == 'keydown' && e.keyCode == 32)) {
+    	let [row, col] = hot.getSelectedLast();
+    	if (col == sheet.header.length - 1){
+    		let _lockCellMeta = hot.getCellMeta(row, col).readOnly;
+    		let _lockCellValue = hot.getDataAtCell(row, col);
+    		console.log(_lockCellMeta, _lockCellValue)
+    		if ( (_lockCellMeta == true) && (_lockCellValue == "false" || _lockCellValue == false )){
+    			//console.log("Reached");
+         			alert("Lock key disabled: \n (1) Check for Duplicate Entry (Yellow Highlight) \n (2) SendTo and SendDate are not filled \n (3) For Infiltration sheet, also check Inf. Batch. No. It is compulsary to fill the entry");
+         		}
+    	}
+	}
+}
+
+function _compareGreat(row, wt_col, value){
+	let w1 = hot.getDataAtCell(row, wt_col);
+	if ( w1 != null || w1 != ''){
+		if (value < w1){			
+			return false;
+		}else{
+			return true;
+		}
+	}else{		
+		return false;
+	}			
+}
+
+function _compareLess(row, wt_col, value){
+	let w1 = hot.getDataAtCell(row, wt_col);
+	if ( w1 != null || w1 != ''){
+		if (value > w1){			
+			return false;
+		}else{
+			return true;
+		}
+	}else{		
+		return false;
+	}			
+}
+
+
+const after_validate = function(isValid, value, row, col){
+	if(  isValid == true){		
+		switch(sheet.sheet_name){
+			case all_sheets[0]:
+			case all_sheets[2]:{
+				if (col == senddate_index + 1){
+					return _compareLess(row, 3, value);
+				}
+				
+				if (col == 3){ hot.validateColumns([senddate_index + 1], (valid) => {});}
+				
+				break;				
+			}
+
+			case all_sheets[1]:
+			case all_sheets[3]:{
+				if (col == senddate_index + 1){
+					return _compareLess(row, 2, value);
+				}
+				if (col == 2){ hot.validateColumns([senddate_index + 1], (valid) => {});}
+				break;
+			}				
+			case all_sheets[4]:{
+				if (col == senddate_index + 1){
+					return _compareLess(row, 4, value);
+				}
+				if (col == 4){ hot.validateColumns([senddate_index + 1], (valid) => {});}
+				break;
+			}
+			case all_sheets[5]:{
+				if (col == senddate_index + 1){
+					return _compareLess(row, 4, value) && _compareLess(row, 8, value);
+				}
+				if (col == 8){
+					hot.validateColumns([senddate_index + 1], (valid) => {});
+					return _compareLess(row, 4, value) && _compareGreat(row, senddate_index + 1, value);			
+				}
+				if (col == 4){ 
+					hot.validateColumns([8, senddate_index + 1], (valid) => {});					
+				}
+				break;
+			}										
+		}
+	}
+	
+	
+}
+
+const after_change = function(changes, src){ // After Changes
+
+	if(src == 'loadData'){
+		return;
+	}	
+	
+	try{
+	//hot.addHook('afterChange', function(changes, src){			    
+	    console.log('found change' + setter + src)                            
+	    if(!setter){		
+		changes.forEach( ([row, col, oldValue, newValue]) =>{
+		    console.log(row, col, oldValue, newValue, hot.countRows(), src)
+		    if (src == 'edit' || src == 'CopyPaste.paste'){
+
+			    if (sheet_unlocked && row == hot.countRows() - 1){
+				hot.alter('insert_row_below');
+				hot.selectCell(row + 1, col);
+				}
+						    
+			    setter = true;
+			    if(hot.getColHeader(col-1) == primary_key_bind_col_name){ //change in primary key		                    
+		                    if ( (oldValue == null || oldValue == '' || oldValue == 'undefined') && (newValue != null) ){//new value entered
+		                    	hot.setDataAtCell(row, col-1, getMaxValueCol(hot.getSourceDataAtCol(col-1)) + 1);
+					let sub_def_row = getDefaultRow();
+					let def_row = [];							
+					
+					let j = col + 1;
+					for(let i = 0; i < sub_def_row.length;i++){
+						def_row.push([row, j, sub_def_row[i]]);
+						j++;
+					}							
+		               	hot.setDataAtCell(def_row);
+		                    }
+		                    else if ( (oldValue != null) && (newValue != null) ) //edited existing value
+		                    	setter = false;//no change to Sr.No. Column
+		                    else{ //deleted entry
+		                        hot.setDataAtCell(row, col-1, null);
+					}
+					setter = false;
+		            }else if(col == 2 ){ 
+		            	if(sheet.sheet_name == all_sheets[5]){ // if sheet is materials
+		            		let mat_item = hot.getDataAtCell(row, col);
+		            		switch(mat_item){
+					case mat_type_list[0]:{
+						hot.setDataAtCell(row, sendto_index, all_sheets[6]);
+						hot.setDataAtCell(row, senddate_index, get_current_date_as_string());
+						}
+					case mat_type_list[1]:{
+						hot.setDataAtCell(row, sendto_index, all_sheets[6]);
+						hot.setDataAtCell(row, senddate_index, get_current_date_as_string());
+						break;}
+					case mat_type_list[2]:{
+						hot.setDataAtCell(row, sendto_index, all_sheets[21]);
+						hot.setDataAtCell(row, senddate_index, get_current_date_as_string());
+						break;}
+					case mat_type_list[3]:{
+						hot.setDataAtCell(row, sendto_index, all_sheets[11]);
+						hot.setDataAtCell(row, senddate_index, get_current_date_as_string());
+						break;}
+					case mat_type_list[4]:{
+						hot.setDataAtCell(row, sendto_index, all_sheets[12]);
+						hot.setDataAtCell(row, senddate_index, get_current_date_as_string());
+						break;}
+					}							
+		            	}
+		            	
+		            	if(sheet.sheet_name == all_sheets[2]) {
+					let mat_list = filter_a_basedOn_b_cond( raw1_ids, raw1_type, newValue);					
+					hot.getCellMeta(row, col + 3).source = mat_list;
+					hot.setDataAtCell(row, col + 3, mat_list[0]);
+				}
+				setter = false;
+		            }else{
+		            	//console.log('editing in other columns')		            	
+		            	setter = false;
+		            }
+		    }
+		});
+	    }else{ //new entry in Sr. No. or any entry will come here and just reset the value of setter.
+		setter = false;
+	    }
+	    update_summation();
+	    //hot.render();                            
+	}catch(err){
+	    	console.log(err)
+	    }
+ }
+    
+
+

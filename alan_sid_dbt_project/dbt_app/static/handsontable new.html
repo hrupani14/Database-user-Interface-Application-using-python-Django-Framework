@@ -1,0 +1,120 @@
+{% load static %}
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <title>Handsontable Example</title>
+    <link rel="stylesheet" href="{% static 'handsontable/handsontable.full.min.css' %}">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:400,500,700">
+    <style>
+        body {
+            font-family: 'Roboto', sans-serif;
+            background-color: #f1f3f4;
+            margin: 0;
+        }
+
+        .container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px;
+            background-color: #fff;
+            box-shadow: 0px 1px 2px rgba(0, 0, 0, 0.1);
+        }
+
+        .left-panel {
+            flex: 1;
+            padding: 10px;
+            background-color: #fff;
+            box-shadow: 0px 1px 2px rgba(0, 0, 0, 0.1);
+        }
+
+        .left-panel button {
+            margin: 5px;
+            padding: 8px 16px;
+            background-color: #007ac1;
+            color: #fff;
+            border: none;
+            cursor: pointer;
+        }
+
+        .left-panel input[type="text"] {
+            margin: 5px;
+            padding: 8px;
+            border: 1px solid #ccc;
+        }
+
+        .right-panel {
+            flex: 3;
+            padding: 10px;
+            background-color: #fff;
+            box-shadow: 0px 1px 2px rgba(0, 0, 0, 0.1);
+        }
+
+        .sheet-list {
+            list-style-type: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .sheet-list li {
+            margin-bottom: 5px;
+        }
+
+        .sheet-link {
+            text-decoration: none;
+            color: #333;
+            font-weight: bold;
+        }
+
+        .sheet-link:hover {
+            text-decoration: underline;
+        }
+
+        .sheet-title {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+
+        .handsontable-container {
+            background-color: #fff;
+            padding: 10px;
+            box-shadow: 0px 1px 2px rgba(0, 0, 0, 0.1);
+        }
+    </style>
+</head>
+
+<body onload="init_func()">
+    <div class="container">
+        <div class="left-panel">
+            <p>Welcome to Gmail-Like Page</p>
+            <button id="unlock_file" onclick="unlock_click()">Unlock</button>
+            <button id="save_file">Save</button>
+            <button id="Report_file">Report_1</button>
+            <button id="Report_file">Report_2</button>
+            <button id="Report_file">Report_3</button>
+            <button id="Report_file">Report_4</button>
+            <button id="sort&filter_file">Sorting & Filtering</button>
+            <button id="Show new_file">Show new</button>
+            <input type="text" id="username_text" name="uname" hidden>
+            <input type="text" id="password_text" name="pwd" hidden>
+            <button id="submit_pwd" hidden>Submit</button>
+        </div>
+        <div class="right-panel">
+            <input type="text" id="handsontable-container-title" hidden readonly><br><br>
+            <div class="handsontable-container" id="handsontable-container-data" hidden></div>
+            <div class="handsontable-container" id="view_handsontable-container-data" hidden></div>
+        </div>
+    </div>
+    <ul class="sheet-list">
+        {% for key, item in data.items %}
+        <li>
+            <a class="sheet-link" href="#" onclick="showHandsontable({{ item }},{{data}})">{{ key }}</a>
+        </li>
+        {% endfor %}
+    </ul>
+</body>
+
+</html>

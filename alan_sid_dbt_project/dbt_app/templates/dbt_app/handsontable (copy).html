@@ -1,0 +1,311 @@
+{% load static %}
+<!DOCTYPE html>
+<html>
+<head>
+
+    <meta charset="utf-8">
+    <title>Handsontable Example</title>
+    <link rel="stylesheet" href="{% static 'handsontable/handsontable.full.min.css' %}">
+    <script src="{% static 'handsontable/handsontable.full.min.js' %}"></script>
+    <script src="{% static 'utility.js' %}"></script>
+    <script src="{% static 'sheets.js' %}"></script>
+    <script src="{% static 'jquery.min.js' %}"></script>
+    
+    <script>
+    
+
+        
+        function save_data(data){   
+            let title_container = document.getElementById("handsontable-container-title");
+            let current_sheet = title_container.value
+            console.log(current_sheet)
+            
+            let data_container = document.getElementById("handsontable-container-data");
+            
+            console.log(data[current_sheet])
+            console.log(data_container)
+       }	
+         function showHandsontable(sheet,sheets) {
+            let data_container = document.getElementById("handsontable-container-data");
+            data_container.innerHTML = "";
+            
+            var columns;
+            if (sheet.sheet_name == 'Raw_1') 
+            {
+                columns = getColumnFormat_Raw_1()
+            } 
+            else if(sheet.sheet_name == 'Raw_2') 
+            {
+                columns = getColumnFormat_Raw_2()
+            }
+            else if(sheet.sheet_name == 'Ingredient_1') 
+            {
+                columns = getColumnFormat_Ingredient_1()
+            }
+            else if(sheet.sheet_name == 'Ingredient_2') 
+            {
+                columns = getColumnFormat_Ingredient_2()
+            }
+            else if(sheet.sheet_name == 'Ingredient_3') 
+            {
+                columns = getColumnFormat_Ingredient_3()
+            }
+            else if(sheet.sheet_name == 'Materials') 
+
+            {
+                columns = getColumnFormat_Materials()
+            }
+            else if(sheet.sheet_name == 'Stage_1') 
+            {
+                columns = getColumnFormat_Stage_1(sheets)  <!-- 'sheets' is passed as a parameter to access the saved options in Materials file!-->
+            }
+            else if(sheet.sheet_name == 'Stage_2') 
+            {
+                columns = getColumnFormat_Stage_2(sheets)   <!-- 'sheets' as a paramter is followed till stage 23 !-->
+            }
+            else if(sheet.sheet_name == 'Stage_3') 
+            {
+                columns = getColumnFormat_Stage_3(sheets)
+            }
+            else if(sheet.sheet_name == 'Stage_4') 
+            {
+                columns = getColumnFormat_Stage_4(sheets)
+            }
+            else if(sheet.sheet_name == 'Stage_5') 
+            {
+                columns = getColumnFormat_Stage_5(sheets)
+            }
+            else if(sheet.sheet_name == 'Stage_6') 
+            {
+                columns = getColumnFormat_Stage_6(sheets)
+            }
+            else if(sheet.sheet_name == 'Stage _7') 
+            {
+                columns = getColumnFormat_Stage_7(sheets)
+            }
+            else if(sheet.sheet_name == 'Stage _8') 
+            {
+                columns = getColumnFormat_Stage_8(sheets)
+            }
+            else if(sheet.sheet_name == 'Stage _9') 
+            {
+                columns = getColumnFormat_Stage_9(sheets)
+
+            }
+            else if(sheet.sheet_name == 'Stage _10') 
+            {
+                columns = getColumnFormat_Stage_10(sheets)
+            }
+            else if(sheet.sheet_name == 'Stage _11') 
+            {
+                columns = getColumnFormat_Stage_11(sheets)
+            }
+            else if(sheet.sheet_name == 'Stage _12') 
+            {
+                columns = getColumnFormat_Stage_12(sheets)
+            }
+            else if(sheet.sheet_name == 'Stage _13') 
+            {
+                columns = getColumnFormat_Stage_13(sheets)
+            }
+            else if(sheet.sheet_name == 'Stage _14') 
+            {
+                columns = getColumnFormat_Stage_14(sheets)
+            }
+            else if(sheet.sheet_name == 'Stage _15') 
+            {
+                columns = getColumnFormat_Stage_15(sheets)
+            }
+            else if(sheet.sheet_name == 'Stage _16') 
+            {
+                columns = getColumnFormat_Stage_16(sheets)
+            }
+            else if(sheet.sheet_name == 'Stage _17') 
+            {
+                columns = getColumnFormat_Stage_17(sheets)
+            }
+            else if(sheet.sheet_name == 'Stage _18') 
+            {
+                columns = getColumnFormat_Stage_18(sheets)
+
+            }
+            else if(sheet.sheet_name == 'Stage _19') 
+            {
+                columns = getColumnFormat_Stage_19(sheets)
+            }
+            else if(sheet.sheet_name == 'Stage _20') 
+            {
+                columns = getColumnFormat_Stage_20(sheets)
+            }
+            else if(sheet.sheet_name == 'Stage _21') 
+            {
+                columns = getColumnFormat_Stage_21(sheets)
+            }
+            else if(sheet.sheet_name == 'Stage _22') 
+            {
+                columns = getColumnFormat_Stage_22(sheets)
+
+            }
+            else if(sheet.sheet_name == 'Stage _23') 
+            {
+                columns = getColumnFormat_Stage_23(sheets)
+            }
+
+            	    
+            var hot = new Handsontable(data_container, {
+                                    data: sheet.sheet_data,
+                                    width: '100%',
+                                    height: 320,
+                                    rowHeaders: true,
+                                    colHeaders: sheet.header,
+                                    contextMenu: true,
+                                    licenseKey: 'non-commercial-and-evaluation',
+                                    columns: columns,	
+                                    fixedColumnsStart: 4,
+                                    fixedRowsStart: 1,
+                                    manualRowMove: true,
+                                  
+                                    });
+            hot.alter('insert_row');  <!--adds an extra empty row in the end!-->
+
+	     
+            let title_container = document.getElementById("handsontable-container-title");
+            title_container.hidden = false;
+            title_container.value = sheet.sheet_name;
+            
+            const download_file = document.getElementById("download_file")
+            const exportPlugin = hot.getPlugin('exportFile');            
+            download_file.addEventListener('click', () => {
+              exportPlugin.downloadFile('csv', {
+                bom: false,
+                columnDelimiter: ',',
+                columnHeaders: true,
+                exportHiddenColumns: true,
+                exportHiddenRows: true,
+                fileExtension: 'xls',
+                filename: 'Handsontable-CSV-file_[YYYY]-[MM]-[DD]',  <!--file name format if 'download' button is clicked!-->
+                mimeType: 'text/csv',
+                rowDelimiter: '\r\n',
+                rowHeaders: true
+              });
+            });
+            
+            const save_file = document.getElementById("save_file");     <!-- saves the data entered in the current sheet to the actual .xls file !-->
+			save_file.addEventListener('click', () => {
+                                                                <!-- refresh the browser to let the changes reflect on it !-->
+    		  var retval = false;
+              hot.validateCells((valid) => {
+    			console.log('inside callback: ' + valid)
+    			retval = valid;
+    			if(valid==true){               
+                        $.ajax({
+          				type: "POST",
+          				url: "/save",
+          				data: {
+          				  name: sheet.sheet_name,
+          				  json_data: JSON.stringify({ header: sheet.header, hot_data: hot.getData() })
+          				},
+          				success: function (data) {
+          				  if (data.valid) {
+          					console.log("Saved Data");
+          					alert("Saved Data");
+          				  } 				  
+          				},
+          				
+          			  });
+          		}
+  			  else{
+    			alert("Invalid Entry:");
+    			}
+                
+              });
+
+        })
+        }
+    </script>
+
+</html>          
+<style>
+table, th, td {
+  border:1px solid black;
+}
+</style> 
+<table>
+
+<body>
+    <table style="text-decoration: none;text-align:right;padding:1px; width:100%; text-align:left; color:turquiose">
+        
+        <tr>
+            <th>Raw_1</th>
+            <th>Raw_2</th>
+            <th>Ingredient_1</th>
+            <th>Ingredient_1</th>
+            <th>Ingredient_1</th>
+            <th>Materials</th>
+        </tr>
+        <tr>
+            <th>Stage_1</th>
+            <th>Stage_2</th>
+            <th>Stage_3</th>
+            <th>Stage_4</th>
+            <th>Stage_5</th>
+            <th>Stage_6</th>
+        </tr>
+        <tr>
+            <th>Stage_7</th>
+            <th>Stage_8</th>
+            <th>Stage_9</th>
+            <th>Stage_10</th>
+            <th>Stage_11</th>
+            <th>Stage_12</th>
+        </tr>
+        <tr>
+            <th>Stage_13</th>
+            <th>Stage_14</th>
+            <th>Stage_15</th>
+            <th>Stage_16</th>
+            <th>Stage_17</th>
+            <th>Stage_18</th>
+        </tr>
+        <tr>
+            <th>Stage_19</th>
+            <th>Stage_20</th>
+            <th>Stage_21</th>
+            <th>Stage_22</th>
+            <th>Stage_23</th>
+            <th>Stage_24</th>
+        </tr>
+        <tr>
+            <th>Stage_25</th>
+            <th>Stage_26</th>
+            <th>Stage_27</th>
+            <th>Stage_28</th>
+        </tr>
+       
+        
+    </table> 
+</body>
+  
+<body style = "margin-top:10px;margin-left: 10px;margin-right: 10px;">
+  <div style = "text-align: centre;">
+    
+    <ul style="list-style-type: none;margin: 1;padding: 1;overflow: hidden;">
+        {% for key, item in data.items %}            
+
+           <li style="float:left;padding:1px;padding-left:2px;padding-right:3px;"><a href="#" onclick="showHandsontable({{ item }},{{data}})" style="text-decoration: none;display: block;color: turquiose;text-align:right;padding:2px;">{{key}}</a></li>
+<tr><td></td></tr>
+            
+        {% endfor %}      <!-- loop to get the list of sheets !-->
+    </ul>
+    </td>
+     </table>
+     </html>
+     
+	<input type="text" id="handsontable-container-title" hidden readonly><br><br>
+	<div id="handsontable-container-data"></div>
+
+    <button id="download_file">Download</button>
+	<button id="save_file">Save</button>
+  </div>
+</body>
+</html>

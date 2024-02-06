@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Login Page</title>
+</head>
+<body>
+    <p> <h2 align="center">FACEAPP</h2> <h4 align="center"> Developed by ASDS, SESSD</h4>
+    <fieldset><legend><b style='color:green'> Login </b> </legend>
+    <form method="post">
+        {% csrf_token %}
+        <h4 align="center">{{form.as_p}}</h4>
+        <p style="text-align: center"> <button type="submit">Login</button></p>
+    </form>
+        </fieldset>
+</body>
+</html>

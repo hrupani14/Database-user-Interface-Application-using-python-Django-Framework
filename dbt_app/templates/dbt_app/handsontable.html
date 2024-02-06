@@ -1,0 +1,686 @@
+{% load static %}
+<!DOCTYPE html>
+<style>
+
+.body { margin: 1px; 
+	width: 100vw;
+	height: 99vh;
+	background: rgba(127,127,127,0.4);
+	position:fixed;
+	//background-image: url('{% static 'background.png' %}');
+	//overflow:none;
+}
+
+.header {
+	display: inline-block;
+	width: 100%;
+	height: 8%;
+	overflow:hidden;
+}
+
+.logo {
+	width: 5%;
+	height: 100%;
+	float: left;
+	background: none;
+}
+
+.header h1 {
+	width: 75%;
+	height: 100%;
+	float: left;
+	text-align: center;
+	background: none;
+	color: #AA00AA;
+	position: sticky;
+	top: 20px;
+}
+
+.header h4 {
+	width: 20%;
+	height: 50%;
+	float: right;
+	text-align: center;
+	background: none;
+	color: #AA00AA;
+	font-size: 15px;
+}
+
+
+.navbar {
+	width: 100%;
+	height: 10%;
+	text-align: center;
+	margin-top:2px;	
+}
+
+.options {
+	display: grid;
+	grid-template-columns: auto auto auto;
+	column-gap: 1px;
+	row-gap: 0px;
+	width: 20%;
+	height: 90%;
+	float: left;
+	border: 2px solid white;
+	margin-left: 10px;
+	background: rgba(175, 175, 175, 0.4);
+}
+
+.option {
+	width: 80%;	
+	height: 90%;
+	//border: 1px solid black;
+	border:none;
+	display: flex;
+	justify-content: center;
+	align-items:center;
+	margin-left: 10px;	
+}
+
+.option button{
+	width: 100%;
+	font-family: 'Times New Roman';
+	font-weight: bold;
+	color: black;
+	font-size: 15px;
+}
+
+.sheets {	
+	width: 75%;
+	height: 90%;
+	float: left;
+	border: 2px solid white;
+	margin-left: 10px;	
+	background: rgba(175, 175, 175, 0.4);
+	font-size: 16px;
+}
+
+.raw {
+	display: grid;
+	grid-template-columns: auto auto;
+	column-gap: 2px;
+	row-gap: 2px;
+	width: 20%;
+	height: 90%;	
+	border: none;
+	background: none;
+	
+}
+
+.stages {
+	display: grid;
+	grid-template-columns: auto auto auto auto auto auto auto auto;
+	column-gap: 2px;
+	row-gap: 2px;
+	width: 75%;
+	height: 90%;
+	float: left;	
+	border: none;
+	background: none;
+}
+
+.ref {	
+	width: 100%;	
+	height: 100%;	
+	border: 1px solid black;
+	display: flex;
+	justify-content: center;
+	align-items:center;	
+}
+
+
+
+.body .table {
+	position:relative;
+	width:99%;
+	height: 75%;
+	display:table;	
+	margin-top: 2%;
+	margin-left: 0.5%;
+	overflow:scroll;	
+	}
+
+.wt_popup {	
+	position:fixed;
+	bottom: 0.1%;
+	z-index: 0 ;
+	background-color: #00FFFF;
+	width: 99%;
+	height: 3%;
+	display: none;	
+	text-align:center;
+	padding: none;
+	margin-left: 0.5%;
+	vertical-align: text-top;
+}
+
+.wt_popup text{	
+	font-family: 'Times New Roman';
+	font-weight: bold;
+	font-size: 15px;	
+	color: #AA000A;	
+}
+
+.popup {
+	position:fixed;
+	z-index: 0 ;
+	left:50%;
+	top:25%;
+	background-color: #00FFFF;
+	width: 20%;
+	height: 30%;
+	display: none;
+	justify-content: center;
+	text-align:center;
+	margin: 20px;	
+}
+
+.about_popup {
+	position:fixed;
+	z-index: 0 ;
+	left:50%;
+	top:50%;
+	background-color: #FFFFFF;
+	width: 20%;
+	height: 30%;
+	display: none;
+	justify-content: center;
+	text-align:center;
+	margin: 20px;	
+}
+
+.show{
+	display: block;
+}
+
+
+.handsontable .invalid {
+  background: #ff4c42;
+}
+
+
+.handsontable .valid {
+  background: #ffffff;
+}
+
+
+.handsontable .red {
+  background: #ffa0a0;
+}
+
+.handsontable .white {
+  background: #ffffff;
+}
+
+.handsontable .green {
+  background: #ccf7a0;
+}
+
+.handsontable .yellow {
+  background: #f7f754;
+}
+
+.handsontable th {
+    white-space: normal!important;
+}
+
+.handsontable .gray_bg{
+  background: #EEEEEE;
+}
+
+</style>
+
+<head>
+
+    <meta charset="utf-8">
+    <title>Database Interface</title>
+    <link rel="icon" href="{% static 'Logo.png' %}">
+    
+    <link rel="stylesheet" href="{% static 'handsontable/handsontable.full.min.css' %}">
+    <script src="{% static 'handsontable/handsontable.full.min.js' %}"></script>
+    <script src="{% static 'utility.js' %}"></script>
+    <script src="{% static 'sheets.js' %}"></script>
+    <script src="{% static 'jquery.min.js' %}"></script>
+    
+    <script>
+        Handsontable.renderers.registerRenderer('color_renderer', color_renderer); //registering the color renderer
+        
+        Handsontable.validators.registerValidator('positiveIntegerValidator', positiveIntegerValidator);
+        Handsontable.validators.registerValidator('positiveNumberValidator', positiveNumberValidator);
+        Handsontable.validators.registerValidator('percentageValidator', percentageValidator);
+        
+        var sheet_unlocked = false;
+        var hot, sheet, sheets;
+        //var format_columns, fixedColumns, view_columns;
+        var setter = false;        
+    	var is_color_render_registered = false;
+    	var show_all_flag = false;
+	var selected_sheet_name = "";
+		
+	function displayWeights(col){		
+	    	let wts = hot.getSourceDataAtCol(col);	    	
+	    	let sum_wt = 0;
+	    	for(let i = 0; i < wts.length; i++){
+	    		if (wts[i] !== null || wts!=''){
+	    			let val = parseInt(wts[i]);
+		    		sum_wt+= isNaN(val) ? 0 : val;
+		    	}
+	    	}
+	    	
+		return sum_wt;
+	}
+	
+	function help(){
+		let path = "{% static 'help.pdf' %}"		
+		window.open(path, "_blank").location;
+	}
+	
+	function about(){
+		document.getElementById("about-window").classList.add("show");
+	}
+	
+	function close_about(){
+		document.getElementById("about-window").classList.remove("show");
+	}
+
+	function contact(){
+		document.getElementById("contact-window").classList.add("show");
+	}
+	
+	function close_contact(){
+		document.getElementById("contact-window").classList.remove("show");
+	}		
+	
+	
+	function update_summation(){
+		switch(sheet.sheet_name){
+			case all_sheets[0]:
+			case all_sheets[2]:{				
+				document.getElementById("net_wt").innerHTML = 'Weight (Sent/Total) = ' + displayWeights(senddate_index + 1) + 'g/' + displayWeights(3) + 'g' + '&nbsp &nbsp &nbsp (Note that the above values are correct only if all entries in the respective columns are valid)';
+				
+				document.getElementById("summation").classList.add('show');
+				break;				
+			}
+
+			case all_sheets[1]:
+			case all_sheets[3]:{
+				document.getElementById("net_wt").innerHTML = 'Weight (Sent/Total) = ' + displayWeights(senddate_index + 1) + 'g/' + displayWeights(2) + 'g'+ '&nbsp &nbsp &nbsp  (Note that the above values are correct only if all entries in the respective columns are valid)';
+				document.getElementById("summation").classList.add('show');
+				break;
+			}				
+			case all_sheets[4]:{
+				document.getElementById("net_wt").innerHTML = 'Weight (Sent/Total) = ' + displayWeights(senddate_index + 1) + 'g/' + displayWeights(4) + 'g'+ '&nbsp &nbsp &nbsp  (Note that the above values are correct only if all entries in the respective columns are valid)';
+				document.getElementById("summation").classList.add('show');
+				break;
+			}
+			case all_sheets[5]:{
+				document.getElementById("net_wt").innerHTML = 'Quantity (Sent/Accepted/Total) = ' + displayWeights(senddate_index + 1) + '/' + displayWeights(8) + '/' + displayWeights(4) + '&nbsp &nbsp &nbsp  (Note that the above values are correct only if all entries in the respective columns are valid)';
+				document.getElementById("summation").classList.add('show');
+				break;
+			}
+			default:
+				document.getElementById("summation").classList.remove('show');
+		}	
+	}
+	
+	function render_hot(){
+		let column_format, fixedColumns;	
+		[column_format, fixedColumns] = getColumnFormat()
+		
+		if (sheet_unlocked == false)
+			column_format = view_getColumnFormat()		
+		
+		let data_container = document.getElementById("handsontable-container-data");
+		data_container.innerHTML = "";		
+		if(hot){
+			hot.destroy();
+		}
+		hot = new Handsontable(data_container,
+		            {   data: sheet.sheet_data,
+		            	 //persistentState: false,
+		                //width: '100%',
+		                contextMenu: false,
+		                //bindRowsWithHeaders: 'strict',
+		                columnSorting: true,
+		                filters: true,		                
+		                dropdownMenu: ['filter_by_condition', 'filter_by_value', 'filter_action_bar'],
+		                rowHeaders: true,
+		                colHeaders: sheet.header,
+		                licenseKey: 'non-commercial-and-evaluation',
+		                fixedColumnsStart: fixedColumns,
+		                fixedRowsStart: 1,
+		                manualRowMove: false,
+		                //stretchH: stretchH,
+		                autoWrapCol : true,
+		                autoWrapRow : true,
+		                colWidths: 100,
+		                wordWrap: true,		                
+		                comments: true,
+		                columns: column_format,
+		                //preventOverflow: 'horizontal',
+		                visibleRows: 50,
+		                hiddenRows: {rows: show_all_flag ? [] : sheet.hidden_rows, 
+		                                //indicators: true, 
+		                                copyPasteEnabled: false,},//*/
+		                beforeKeyDown: sheet_unlocked ? lock_check : ()=>{},
+		                beforeOnCellMouseUp: sheet_unlocked ? lock_check : ()=>{},		                
+		                afterChange: sheet_unlocked ? after_change : ()=>{},
+		                afterValidate: sheet_unlocked ? after_validate : ()=>{},
+		            });
+		
+		if (sheet_unlocked)
+			hot.alter('insert_row_below');
+
+		hot.render();
+		
+		update_summation();
+
+	}
+		
+    	function init_func(){
+           document.getElementById("save_file").disabled = true;
+           document.getElementById("show_all").disabled = true;
+           document.getElementById("show_all").innerText = "Show All";
+           document.getElementById("unlock_file").disabled = true;
+           
+           document.getElementById("username_text").hidden = true;
+           document.getElementById("password_text").hidden = true;
+           document.getElementById("submit_pwd").hidden = true;
+    	}
+    		      
+        function periodicUpdate(){           
+           if (sheet && sheet_unlocked == true){           
+               $.ajax({
+                    type: "POST",
+                    url: "/add",
+                    data:{
+                            sheet_name: sheet.sheet_name,
+                        },
+                    success: function (data) {
+                        if(data['response'] == "success"){
+                                console.log("Server List updated");
+                        }else{
+                                ;//console.log("Something fishy at server");
+                        }
+                    },
+                });
+            }
+            document.getElementById("date_time").innerHTML = new Date().toLocaleString().replace(',', '');
+        }        
+        setInterval(periodicUpdate, 1000);
+        
+         function unlock_click(){
+         		console.log("In unlock CLICK");         		
+          		document.getElementById("username_text").hidden = false;
+          		document.getElementById("password_text").hidden = false;
+          		document.getElementById("submit_pwd").hidden = false;          		
+          		document.getElementById("login-window").classList.add("show");
+          		
+         }
+
+        function show_all_ids(){
+            if (show_all_flag == false){ 
+                show_all_flag = true;                
+                document.getElementById("show_all").innerText = "Show New";
+            }else{
+                show_all_flag = false;
+                document.getElementById("show_all").innerText = "Show All";
+            }
+            render_hot();
+        }
+
+        function color_names(){
+           	all_sheets.forEach((element) => {        
+	           	let a = document.getElementById(element.split(" ").join("")).style;
+	           	a.color =  'black'
+	           	a.fontWeight =  'normal';
+           	});
+           	
+		if(sheet_unlocked == false){
+			let a = document.getElementById(sheet.sheet_name.split(" ").join("")).style
+			a.color = 'blue';
+			a.fontWeight =  'normal';
+		}else{
+			let a = document.getElementById(sheet.sheet_name.split(" ").join("")).style
+			a.color = 'red';
+			a.fontWeight = 'bold';
+		}		
+	}
+	
+	function get_sheets(next_sheet){
+
+	       return $.ajax({
+		    type: "POST",
+		    url: "/get_sheets",
+		    data:{
+		    		sheet_name : sheet_unlocked ? selected_sheet_name : "",
+		    		next_sheet : next_sheet,
+		        },
+		    success: function (data) {
+		        if(data['response'] == "success"){
+		        	 sheets = data['reload_data'];		        	 
+		                console.log("Got sheet data from server", sheets);
+		        }else{
+		                console.log("Something fishy at server");
+		        }
+		    },
+		});
+	}
+	
+
+	function save_sheet(){
+		let hot_data = hot.getSourceData(0, 0, hot.countSourceRows() - 2, hot.countSourceCols() - 1);		
+               return $.ajax({
+                   type: "POST",
+                   url: "/save",
+                   data: {
+                       name: sheet.sheet_name,
+                       json_data: JSON.stringify({ header: sheet.header, hot_data: hot_data }),                      
+                   },
+               });
+	}	
+		
+      function showHandsontable(sel_sheet_name) {      		
+	   $.when(get_sheets(sel_sheet_name) ).done( function(a){	   
+		   if (!sheets){
+			   	console.log('No sheets');
+			   	return;
+			   }else{
+				if (sheet_unlocked == true){
+				    alert('Save data before exiting. Unsaved changes will be lost');
+				}
+			   }
+
+			   if (sheet && sheet_unlocked == true){
+			       $.ajax({
+				    type: "POST",
+				    url: "/login",
+				    data:{
+				            sheet_name: sheet.sheet_name,
+				            remove: false,
+				        },
+				    success: function (data) {
+				        if(data['response'] == "success"){
+				                console.log("Server List updated");
+				        }else{
+				                console.log("Something fishy at server");
+				        }
+				    },
+				});
+			    }           
+			   
+			   sheet = sheets[sel_sheet_name];
+			   selected_sheet_name = sel_sheet_name;
+			   
+			   sheet_unlocked = false;
+			   all_sheets = get_sheet_names();
+
+			   [accept_reject_col_index, lock_col_index, sendto_index, senddate_index] = get_col_index(sheet.header, [accept_reject_col_name, lock_col_name, sendto_col_name, sentdate_col_name]);
+			   color_names();
+
+				  
+			   document.getElementById("save_file").disabled = true;
+			   document.getElementById("show_all").disabled = false;
+			   document.getElementById("unlock_file").disabled = false;
+			   
+			   document.getElementById("username_text").hidden = true;
+			   document.getElementById("password_text").hidden = true;
+			   document.getElementById("submit_pwd").hidden = true;
+			   document.getElementById("login-window").classList.remove("show");
+			   render_hot();
+	   });
+	   }
+	   
+       function save_to_database(){           
+           let duplicate_count = duplicate_meta.filter(x => x == true).length                      
+           if (duplicate_count > 0){
+               alert(duplicate_count + " Duplicate Entries present in sheet");
+           }else{               
+               hot.validateCells( (valid) => {
+                   if(valid==true){
+                       console.log('saving data for ' +  sheet.sheet_name);
+			try{                       
+			$.when(save_sheet() ).done( function(response_data){
+				console.log(response_data)				
+			       if(response_data['response'] == "success"){
+				   alert("Saved Data for " +  sheet.sheet_name);
+				   showHandsontable(sheet.sheet_name);
+			       }else{
+				   alert("Not Saved Data. Error in python side");
+			       }
+			});
+			}catch(err){
+				console.log('saving data error ' +  err);
+			}
+                       
+                   }
+                   else{
+                       console.log('did not send data for saving:' + sheet.sheet_name);
+                       alert("Invalid Entry:" + sheet.sheet_name);
+                   }
+               });
+           }
+       }
+
+
+
+       function submit_password(){
+            $.ajax({
+                type: "POST",
+                url: "/login",
+                data:{                        
+                        username: document.getElementById("username_text").value,
+                        password: document.getElementById("password_text").value,
+                        sheet_name: sheet.sheet_name,
+                    },
+                success: function (data) {
+                    if(data['response'] == "success"){
+                    	sheet_unlocked = true;                    	
+			$.when(get_sheets(selected_sheet_name) ).done( function(a){
+		                console.log("Logged in", "Got Sheets Afresh");
+		                document.getElementById("username_text").hidden = true;
+		                document.getElementById("password_text").hidden = true;
+		                document.getElementById("submit_pwd").hidden = true;
+		                document.getElementById("save_file").disabled = false;
+		                document.getElementById("show_all").disabled = false;
+		        	document.getElementById("unlock_file").disabled = true;
+ 				document.getElementById("login-window").classList.remove("show");
+		                try{                        
+				        sheet = sheets[selected_sheet_name];				        
+				        render_hot();
+				        color_names();
+				        				        
+		                }catch(err){
+		                	console.log(err);
+		                }		                
+                        });
+                    }else if(data['response'] == "contention"){
+    		                    alert("Sheet already in Use");
+                    }                  
+                    else{
+                            console.log("Wrong Credentials");
+                            alert("Wrong Credentials");
+                    }
+                },
+            });
+       }
+
+    </script>
+</head>
+
+
+<body class="body" onload="init_func()">
+
+ <div class="header">
+	<img class = "header logo" src= {% static 'Logo.png' %} alt="Logo" class="logo">	
+	<h1> Database Interface </h1>
+	<h4> <a href="#" id = id_help onclick="help()" > Help </a> &nbsp 
+	<a href="#" id = id_contact onclick="contact()" > Contact us </a>  &nbsp 
+	<a href="#" id = id_about onclick="about()" > About </a>  &nbsp 
+	<span id="date_time"></span></h4>
+ </div>	
+     
+<div class="navbar">  
+	<div class = "navbar sheets" >				
+		<div class = "navbar sheets raw">
+		    {% for item in sheet_names %}		    	
+		    	{% if forloop.counter0 < 6 %}
+				<div class = "navbar sheets raw ref"> <a href="#" id= {{item|cut:" "}} onclick="showHandsontable( '{{ item }}' )" >{{item}}</a> </div>
+			{% endif %}
+		    {% endfor %}
+		</div>
+		<div class = "navbar sheets stages">
+		    {% for item in sheet_names %}
+		    	{% if forloop.counter0 > 5 %}
+				<div class = "navbar sheets stages ref"> <a href="#" id= {{item|cut:" "}} onclick="showHandsontable( '{{ item }}' )" >{{item}}</a> </div>
+			{% endif %}
+		    {% endfor %}
+		</div>
+	</div>
+	
+	
+	<div class = "navbar options">
+		<div class = "navbar options option"> <button id="unlock_file" onclick="unlock_click()" disabled>Unlock</button> </div>
+		<div class = "navbar options option"> <button id="Report_file1" >Report_1 </button></div>
+		<div class = "navbar options option"> <button id="Report_file2" >Report_2 </button></div>
+		<div class = "navbar options option"> <button id="show_all" onclick="show_all_ids()"  disabled>Show All</button> </div>
+		<div class = "navbar options option"> <button id="Report_file3" >Report_3 </button></div>	
+		<div class = "navbar options option"> <button id="Report_file4" >Report_4</button></div>
+		<div class = "navbar options option"> <button id="save_file" onclick="save_to_database()" disabled>Save</button></div>					
+		<div class = "navbar options option"> <button id="Report_file4" >Cartogram 1</button> </div>
+		<div class = "navbar options option"> <button id="Report_file4" >Cartogram 2</button> </div>
+			
+		
+	</div>
+		
+ </div>   
+<div class = "body table" id="handsontable-container-data"/></div>
+<div id = "summation" class = "body wt_popup"> <text id = "net_wt" ">  </h4></div>
+</body>
+
+<div id = "login-window" class = "popup">
+	<h1> Login Form </h1>
+	<i text-color= red> (Login to open the sheet in editable mode) </i>
+	<p><b>Username: <input type="text" id="username_text" name="uname" hidden></b></p>
+	<p><b>Password: <input type="text" id="password_text" name="pwd" hidden></b></p>
+	<button id="submit_pwd" hidden onclick="submit_password()">submit</button>
+</div>
+
+<div id = "about-window" class = "about_popup">
+	<h1> About </h1>
+	<p> Welcome to Database Interface Application. </p>
+	<p> Version 1.0 </p>
+	<p> Designed and Developed by SECTD in collaboration with IF3.</p>	
+	<button onclick="close_about()"> Close </button>
+</div>
+
+<div id = "contact-window" class = "about_popup">
+	<h1> Contact </h1>
+	<p> For any Queries, contact </p>
+	<p> P Rajshekar </p>
+	<p> Extension: 25187/25188 </p>	
+	<button onclick="close_contact()"> Close </button>
+</div>
+
+</html>
